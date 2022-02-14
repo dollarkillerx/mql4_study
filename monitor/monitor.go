@@ -18,6 +18,8 @@ type Content struct {
 	Profit     float64 `json:"profit"`
 	Percentage float64 `json:"percentage"`
 	Server     string  `json:"server"`
+	Leverage   int     `json:"leverage"` // 账户杠杆
+	Margin     float64 `json:"margin"`   // 已用保证金
 }
 
 func main() {
@@ -25,7 +27,7 @@ func main() {
 
 	router(app)
 
-	if err := app.Run(":80"); err != nil {
+	if err := app.Run(":8147"); err != nil {
 		return
 	}
 }
@@ -41,6 +43,8 @@ func router(app *gin.Engine) {
 				panic(err)
 			}
 
+			fmt.Println(cont)
+
 			go func() {
 				if err := pgsql.Model(&PsModel{}).Create(&PsModel{
 					User:       cont.User,
@@ -48,6 +52,8 @@ func router(app *gin.Engine) {
 					Profit:     cont.Profit,
 					Percentage: cont.Percentage,
 					Server:     cont.Server,
+					Leverage:   cont.Leverage,
+					Margin:     cont.Margin,
 				}).Error; err != nil {
 					log.Println(err)
 				}
@@ -63,7 +69,13 @@ var pgsql *gorm.DB
 func init() {
 	fmt.Println("Init Server")
 	// init pgsql
-	pg, err := InitPostgres(cfg.PostgresConfiguration{})
+	pg, err := InitPostgres(cfg.PostgresConfiguration{
+		Host:     "43.135.75.195",
+		Port:     "5433",
+		User:     "dollarkiller",
+		Password: "H3vuyZ5ri",
+		DBName:   "monitor",
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -75,11 +87,13 @@ func init() {
 
 type PsModel struct {
 	gorm.Model
-	User       int     `json:"user"`
-	Balance    float64 `json:"balance"`
-	Profit     float64 `json:"profit"`
-	Percentage float64 `json:"percentage"`
-	Server     string  `json:"server"`
+	User       int     `json:"user"`       // 用户
+	Balance    float64 `json:"balance"`    // 利润
+	Profit     float64 `json:"profit"`     // 余额
+	Percentage float64 `json:"percentage"` // 浮亏
+	Server     string  `json:"server"`     // 服务器
+	Leverage   int     `json:"leverage"`   // 账户杠杆
+	Margin     float64 `json:"margin"`     // 已用保证金
 }
 
 // InitPostgres ...
